@@ -28,6 +28,7 @@ impl Default for Contract {
 #[ext_contract(ft_contract)]
 trait FtContract {
     fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata);
+    fn delete_contract_account();
 }
 
 #[near_bindgen]
@@ -56,13 +57,43 @@ impl Contract {
                     .save_contract_callback(ft_contract_id),
             )
     }
+
     // Private
+    // Add contract to the list of deployed contracts
     #[private]
     pub fn add_contract(&mut self, ft_contract_id: AccountId) {
         self.deployed_contracts.push(&ft_contract_id);
     }
+    // Remove the contract from the list of deployed contracts
+    #[private]
+    pub fn remove_contract(&mut self, ft_contract_id: AccountId) {
+        let index = self
+            .deployed_contracts
+            .iter()
+            .position(|id| id == ft_contract_id);
+        if let Some(index) = index {
+            self.deployed_contracts.swap_remove(index as u64);
+        }
+    }
+    #[private]
+    pub fn delete_contract_account(&mut self, ft_contract_id: AccountId) {
+        ft_contract::ext(ft_contract_id.clone())
+            .with_static_gas(Gas(5 * 10u64.pow(12)))
+            .delete_contract_account()
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(Gas(5 * 10u64.pow(12))) // 5*10e12, 5Tgas
+                    .remove_contract_callback(ft_contract_id),
+            );
+    }
+
+    // Return number of contracts deployed
+    pub fn num_contracts(&self) -> u64 {
+        self.deployed_contracts.len() as u64
+    }
 
     // Callbacks
+    // Save contract callback
     #[private]
     pub fn save_contract_callback(
         &mut self,
@@ -78,10 +109,20 @@ impl Contract {
         // Add the contract to the list of deployed contracts
         self.add_contract(ft_contract_id);
     }
+    // Remove contract callback
+    #[private]
+    pub fn remove_contract_callback(
+        &mut self,
+        ft_contract_id: AccountId,
+        #[callback_result] call_result: Result<(), PromiseError>,
+    ) {
+        // Check if the promise failed
+        if call_result.is_err() {
+            log!("Delete contract failed!");
+            return;
+        }
 
-    // Public
-    // Return number of contracts deployed
-    pub fn num_contracts(&self) -> u64 {
-        self.deployed_contracts.len() as u64
+        // Remove the contract from the list of deployed contracts
+        self.remove_contract(ft_contract_id);
     }
 }
