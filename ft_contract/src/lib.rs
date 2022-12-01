@@ -10,12 +10,15 @@ use near_sdk::{
     PromiseOrValue,
 };
 
+mod storage;
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
     token: FungibleToken,
     metadata: LazyOption<FungibleTokenMetadata>,
     mod_list: LookupSet<AccountId>,
+    registered_accounts: u64,
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -37,6 +40,7 @@ impl Contract {
             token: FungibleToken::new(StorageKey::FungibleToken),
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             mod_list: LookupSet::new(StorageKey::ModList),
+            registered_accounts: 1,
         };
         // Enlist the factory contract as a mod
         this.mod_list.insert(&env::predecessor_account_id());
@@ -54,10 +58,6 @@ impl Contract {
         this
     }
 
-    fn on_account_closed(&mut self, account_id: AccountId, balance: Balance) {
-        log!("Closed @{} with {}", account_id, balance);
-    }
-
     fn on_tokens_burned(&mut self, account_id: AccountId, amount: Balance) {
         log!("Account @{} burned {}", account_id, amount);
     }
@@ -69,6 +69,12 @@ impl Contract {
         );
         self.mod_list.insert(&account_id);
     }
+
+    // Get registered accounts count
+    pub fn get_registered_accounts(&self) -> u64 {
+        self.registered_accounts
+    }
+
     // Delete the contract account (self destruct!!!)
     pub fn delete_contract_account(&mut self) {
         require!(
@@ -80,7 +86,6 @@ impl Contract {
 }
 
 near_contract_standards::impl_fungible_token_core!(Contract, token, on_tokens_burned);
-near_contract_standards::impl_fungible_token_storage!(Contract, token, on_account_closed);
 
 #[near_bindgen]
 impl FungibleTokenMetadataProvider for Contract {
