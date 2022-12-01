@@ -1,4 +1,6 @@
 */target/
 */neardev/
+*/.cargo/
 .DS_store
+
 Cargo.lock
