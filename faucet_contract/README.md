@@ -1,13 +1,8 @@
-# Near Testnet Faucet
+Faucet Contract
+===================
+This is the faucet contract currently deployed on https://near-faucet.io it [factory](../factory_contract/). 
 
-Near Testnet Faucet consists of two Smart Contracts witten in Rust and a [TailwindCSS](https://tailwindcss.com/) and [AlpineJs](https://alpinejs.dev/) frontend, currently deployed at https://near-faucet.io. It aims to help developers coming from other blockchains who are used to the concept of *Faucets* and people who for some reason are in need of _Testnet_ Near.
-
-### Prerequisites
-
-In order to compile and run everything you will need:
-
-* Node and [near-cli](https://github.com/near/near-cli) installed
-* Rust and WASM toolchain [detailed steps here](https://www.near-sdk.io/)
+*Be advised that this is non audited contract for educational purposes only*
 
 
 ## Deployment and Usage
@@ -24,21 +19,13 @@ const MIN_BALANCE_THRESHOLD: Balance = 10 * ONE_NEAR;
 ```
 
 If you want to test/experiment without using the vault contract you should omit the `env::account_balance()` check at the end of the `request_funds` fn
+
 ```rust
 78 // check if additional liquidity is needed
-79 // if env::account_balance() <MIN_BALANCE_THRESHOLD {
+79 // if env::account_balance() < MIN_BALANCE_THRESHOLD {
 80 //   self.request_additional_liquidity();
-81 //}
+81 // }
 ```
-
-#### build:  
-`RUSTFLAGS='-C link-arg=-s' cargo build --target wasm32-unknown-unknown --release`
-
-#### deploy:  
-`near deploy --wasmFile PATH_TO.wasm --accountId ACCOUNT_YOU_HAVE_KEYS_FOR`
-
-Alternatively, you can make use of `near dev deploy`
-
 
 #### Brief overview of the contracts functions
 
@@ -66,30 +53,5 @@ fn request_additional_liquidity(...) {
 }
 ```
 
-## Testing
-Currently the project makes use of Rusts Unit testing (ish), Integration tests are a bit hard since the tooling is under restructuring/refactoring at the moment.    
-test:  
-`cargo test `
-
-## Frontend
-Frontend consists of a static web app built with [TailwindCSS](https://tailwindcss.com/), [AlpineJs](https://alpinejs.dev/) and [near-api-js](https://github.com/near/near-api-js) which can be found on the [frontend](https://github.com/flmel/near-testnet-faucet/tree/frontend) branch.
-
-### Further development and research/exploration
-
-- [ ] Add [workspaces-rs](https://github.com/near/workspaces-rs/) integration tests. (currently blocked by: [#110](https://github.com/near/workspaces-rs/issues/110))
-- [ ] Make the contract emit custom [events](https://nomicon.io/Standards/EventsFormat)
-- [ ] Move the frontend to [Yew](https://yew.rs/)
-- [ ] Improve defensive mechanics
-- [ ] Stake percentage of the vault/account balance with a testnet validator  
-- [ ] Add ability to request USN (either trough XCC to usdn.testnet or via contract ballance support)
-- [ ] Explore the idea to support other FTs
-    - maybe airdrop mechanics(via collaborative effort) to some kind of Dev FT/NFT holders
-
-
-### Useful Links
-
-* [Near University](https://near.university)
-* [Near University Discord](https://discord.gg/k4pxafjMWA)
-* [Near Docs](https://docs.near.org)
-* [Near SDK-RS Docs](https://near-sdk.io)
-* [Testnet Blockchain Explorer](https://explorer.testnet.near.org/)
+___
+[NEAR](https://near.org) - [NEAR Docs](https://near.org) - [Nomicon](https://nomicon.io) - [Discord](https://near.chat) - [AwesomeNear](https://awesomenear.com)
