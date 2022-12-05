@@ -96,6 +96,7 @@ impl FungibleTokenReceiver for Contract {
 
 #[near_bindgen]
 impl Contract {
+    // List token from a factory contract
     pub fn ft_list_from_factory(
         &mut self,
         ft_request_allowance: U128,
@@ -118,8 +119,8 @@ impl Contract {
             },
         );
     }
-
-    pub fn enlist_factory(&mut self, factory_id: AccountId) {
+    // Add a contract to the factory list
+    pub fn add_factory(&mut self, factory_id: AccountId) {
         self.factory_list.insert(factory_id);
     }
     // List new FT in the Faucet
@@ -216,7 +217,7 @@ impl Contract {
         amount: U128,
     ) {
         require!(
-            self.blocklist.contains(&receiver_id) == false,
+            self.block_list.contains(&receiver_id) == false,
             "Account has been blocklisted!".to_owned()
         );
         match self.ft_faucet.get(&ft_contract_id) {
