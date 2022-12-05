@@ -30,7 +30,9 @@ pub struct FTconfig {
     ft_metadata: FungibleTokenMetadata,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone)]
+#[near_bindgen]
+#[derive(Serialize, BorshSerialize, BorshDeserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
 pub struct FT {
     account_id: AccountId,
     ft_config: FTconfig,
@@ -247,7 +249,7 @@ impl Contract {
 
                 // TODO revaluate GAS attached
                 // Register the receiver_id in the FT contract, transfer the funds and update the available FT balance
-                Promise::new(ft_contract_id)
+                Promise::new(ft_contract_id.clone())
                     .function_call(
                         "storage_deposit".to_owned(),
                         storage_deposit_arguments,
@@ -260,7 +262,10 @@ impl Contract {
                         ONE_YOCTO,
                         Gas(20 * TGAS),
                     )
-                    .then(Self::ext(env::current_account_id()).update_ft_balance_available(amount));
+                    .then(
+                        Self::ext(env::current_account_id())
+                            .update_ft_balance_available(ft_contract_id, amount),
+                    );
             }
         }
     }
@@ -268,6 +273,7 @@ impl Contract {
     #[private]
     pub fn update_ft_balance_available(
         &mut self,
+        ft_contract_id: AccountId,
         amount: U128,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) {
@@ -276,7 +282,7 @@ impl Contract {
             Err(err) => log!("{:#?}", err),
             Ok(_) => {
                 self.ft_faucet
-                    .get_mut(&env::predecessor_account_id())
+                    .get_mut(&ft_contract_id)
                     .unwrap()
                     .ft_available_balance -= amount.0;
 
