@@ -49,10 +49,12 @@ impl Contract {
         // update last_call
         self.last_successful_call = env::block_timestamp_ms();
     }
+    // add an account to the allowlist
     #[private]
     pub fn add_to_allow_list(&mut self, account_id: AccountId) {
         self.allow_list.insert(account_id);
     }
+    // remove an account from the allowlist
     #[private]
     pub fn remove_from_allowlist(&mut self, account_id: AccountId) {
         self.allow_list.remove(&account_id);
