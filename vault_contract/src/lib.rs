@@ -7,8 +7,9 @@ use near_sdk::{
 
 // 24h in ms
 const REQUEST_COOLDOWN_MS: u64 = 86_400_000;
-// because why always round numbers
+// Why always round numbers?
 const AMOUNT_TO_BE_SENT: u128 = 7349 * ONE_NEAR;
+
 // Contract struct
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -16,6 +17,7 @@ pub struct Contract {
     last_successful_call: u64,
     allow_list: LookupSet<AccountId>,
 }
+
 // Storage keys
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -34,27 +36,30 @@ impl Default for Contract {
 #[near_bindgen]
 impl Contract {
     pub fn request_funds(&mut self) {
-        // require the predecessor to be in the allowlist
+        // Require the predecessor to be in the allowlist
         require!(
             self.allow_list.contains(&env::predecessor_account_id()),
             "Sorry, you are not allowed to request funds!"
         );
-        // require that the REQUEST_COOLDOWN_MS has passed
+        // Require that the REQUEST_COOLDOWN_MS has passed
         require!(
             env::block_timestamp_ms() - self.last_successful_call > REQUEST_COOLDOWN_MS,
             "Cooldown haven't passed"
         );
-        // make the transfer
+
+        // Make the transfer
         Promise::new(env::predecessor_account_id()).transfer(AMOUNT_TO_BE_SENT);
-        // update last_call
+        // Update last_call
         self.last_successful_call = env::block_timestamp_ms();
     }
-    // add an account to the allowlist
+
+    // Add an account to the allowlist
     #[private]
     pub fn add_to_allow_list(&mut self, account_id: AccountId) {
         self.allow_list.insert(account_id);
     }
-    // remove an account from the allowlist
+
+    // Remove an account from the allowlist
     #[private]
     pub fn remove_from_allowlist(&mut self, account_id: AccountId) {
         self.allow_list.remove(&account_id);

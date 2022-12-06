@@ -8,6 +8,17 @@ edition = "2021"
 [dependencies]
 near-sdk = "4.1.1"
 
+# Those are needed for tests (workspaces-rs)
+[dev-dependencies]
+anyhow = "1.0"
+base64 = "0.13"
+near-primitives = "0.15.0"
+near-sdk =  "4.1.1"
+near-units = "0.2.0"
+serde_json = "1.0"
+tokio = { version = "1.23", features = ["full"] }
+workspaces = "0.7.0"
+
 [lib]
 crate-type = ["cdylib"]
 
@@ -20,3 +31,6 @@ debug = false
 panic = "abort"
 # Opt into extra safety checks on arithmetic operations https://stackoverflow.com/a/64136471/249801
 overflow-checks = true
+
+[workspace]
+members = []

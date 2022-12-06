@@ -3,7 +3,7 @@ use near_sdk::{
     env,
     json_types::U128,
     near_bindgen, require,
-    store::{LookupSet, UnorderedMap, Vector},
+    store::{LookupSet, UnorderedMap},
     AccountId, Balance, BorshStorageKey, Promise,
 };
 
