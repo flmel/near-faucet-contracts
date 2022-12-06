@@ -33,4 +33,3 @@ panic = "abort"
 overflow-checks = true
 
 [workspace]
-members = []
