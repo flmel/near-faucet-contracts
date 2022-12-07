@@ -2776,11 +2776,8 @@ name = "vault_contract"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.13.0",
- "near-primitives 0.15.0",
  "near-sdk",
  "near-units",
- "serde_json",
  "tokio",
  "workspaces",
 ]
