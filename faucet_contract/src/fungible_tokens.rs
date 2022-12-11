@@ -265,14 +265,14 @@ impl Contract {
                     )
                     .then(
                         Self::ext(env::current_account_id())
-                            .update_ft_balance_available(ft_contract_id, amount),
+                            .update_ft_balance_and_successful_requests(ft_contract_id, amount),
                     );
             }
         }
     }
 
     #[private]
-    pub fn update_ft_balance_available(
+    pub fn update_ft_balance_and_successful_requests(
         &mut self,
         ft_contract_id: AccountId,
         amount: U128,
@@ -287,6 +287,7 @@ impl Contract {
                     .unwrap()
                     .ft_available_balance -= amount.0;
 
+                self.successful_requests += 1;
                 log!("FT Token balance updated");
             }
         }
