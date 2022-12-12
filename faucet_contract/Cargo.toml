@@ -9,6 +9,12 @@ edition = "2021"
 near-sdk = "4.1.1"
 near-contract-standards ="4.1.1"
 
+[dev-dependencies]
+anyhow = "1.0"
+near-units = "0.2.0"
+tokio = { version = "1.23", features = ["full"] }
+workspaces = "0.7.0"
+
 [lib]
 crate-type = ["cdylib"]
 
