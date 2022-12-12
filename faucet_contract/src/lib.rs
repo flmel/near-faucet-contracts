@@ -3,6 +3,7 @@ use near_sdk::{
     env,
     json_types::U128,
     near_bindgen, require,
+    serde::{Deserialize, Serialize},
     store::{LookupSet, UnorderedMap},
     AccountId, Balance, BorshStorageKey, Promise,
 };
@@ -26,10 +27,12 @@ pub struct Contract {
     factory_list: LookupSet<AccountId>,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Stats {
-    pub successful_requests: u64,
-    pub ft_contracts_listed: u64,
-    pub recent_contributions: Vec<(AccountId, U128)>,
+    successful_requests: u64,
+    ft_contracts_listed: u64,
+    recent_contributions: Vec<(AccountId, U128)>,
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]
