@@ -3,6 +3,7 @@ use near_sdk::{
     env,
     json_types::U128,
     near_bindgen, require,
+    serde::{Deserialize, Serialize},
     store::{LookupSet, UnorderedMap},
     AccountId, Balance, BorshStorageKey, Promise,
 };
@@ -20,9 +21,18 @@ use external::vault_contract;
 pub struct Contract {
     recent_contributions: Vec<(AccountId, Balance)>,
     recent_receivers: UnorderedMap<AccountId, u64>,
+    successful_requests: u64,
     ft_faucet: UnorderedMap<AccountId, FTconfig>,
     block_list: LookupSet<AccountId>,
     factory_list: LookupSet<AccountId>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Stats {
+    successful_requests: u64,
+    ft_contracts_listed: u64,
+    recent_contributions: Vec<(AccountId, U128)>,
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -39,6 +49,7 @@ impl Default for Contract {
             recent_contributions: Vec::new(),
             recent_receivers: UnorderedMap::new(StorageKey::RecentReceivers),
             ft_faucet: UnorderedMap::new(StorageKey::FTFaucet),
+            successful_requests: 0,
             block_list: LookupSet::new(StorageKey::BlockList),
             factory_list: LookupSet::new(StorageKey::FactoryList),
         }
@@ -49,7 +60,7 @@ impl Default for Contract {
 impl Contract {
     // Request NEAR from the faucet
     pub fn request_near(&mut self, receiver_id: AccountId, amount: U128) {
-        // Check if the receiver is in the blocklist
+        // check if the receiver is in the blocklist
         require!(
             self.block_list.contains(&env::predecessor_account_id()) == false,
             "Account has been blocklisted!"
@@ -59,7 +70,7 @@ impl Contract {
             "Withdraw request too large!"
         );
 
-        // Remove expired restrictions
+        // remove expired restrictions
         self.remove_expired_restrictions();
 
         let current_timestamp_ms: u64 = env::block_timestamp_ms();
@@ -80,6 +91,8 @@ impl Contract {
         }
         // make the transfer
         Promise::new(receiver_id.clone()).transfer(amount.0);
+        // increment the successful requests
+        self.successful_requests += 1;
         // check if additional liquidity is needed
         if env::account_balance() < MIN_BALANCE_THRESHOLD {
             self.request_additional_liquidity();
@@ -130,15 +143,24 @@ impl Contract {
         self.recent_contributions.truncate(10);
     }
 
-    // get top contributors
-    pub fn get_recent_contributions(&self) -> Vec<(AccountId, String)> {
+    // Get stats
+    pub fn get_stats(&self) -> Stats {
+        Stats {
+            successful_requests: self.successful_requests,
+            ft_contracts_listed: self.ft_faucet.len() as u64,
+            recent_contributions: self.get_recent_contributions(),
+        }
+    }
+
+    // Get recent contributors
+    pub fn get_recent_contributions(&self) -> Vec<(AccountId, U128)> {
         self.recent_contributions
             .iter()
-            .map(|(account_id, amount)| (account_id.clone(), amount.to_string()))
+            .map(|(account_id, amount)| (account_id.clone(), U128(*amount)))
             .collect()
     }
 
-    // request_additional_liquidity
+    // Request additional liquidity
     fn request_additional_liquidity(&self) {
         vault_contract::ext(VAULT_ID.parse().unwrap()).request_funds();
     }
