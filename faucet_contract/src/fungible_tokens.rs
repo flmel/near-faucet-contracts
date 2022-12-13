@@ -119,12 +119,14 @@ impl Contract {
             },
         );
     }
+
     // Add a contract to the factory list
     pub fn add_factory(&mut self, factory_id: AccountId) {
+        assert_self();
         self.factory_list.insert(factory_id);
     }
+
     // List new FT in the Faucet
-    #[private]
     pub fn ft_list_token(
         &mut self,
         #[callback_result] call_result: Result<FungibleTokenMetadata, PromiseError>,
@@ -132,9 +134,10 @@ impl Contract {
         ft_request_allowance: Balance,
         ft_available_balance: Balance,
     ) {
+        assert_self();
         match call_result {
             Ok(ft_metadata) => {
-                // Result is Ok store into ft_faucet HashMap
+                // result is Ok store into ft_faucet HashMap
                 self.ft_faucet.insert(
                     ft_account_id,
                     FTconfig {
@@ -143,10 +146,10 @@ impl Contract {
                         ft_metadata,
                     },
                 );
-                // Log Successful message
+                // log Successful message
                 log!("Token added Successfully");
             }
-            // Log Error message
+            // log Error message
             Err(err) => log!("{:#?}", err),
         }
 
@@ -155,7 +158,7 @@ impl Contract {
 
     // Change allowance
     pub fn ft_change_allowance(&mut self, new_request_allowance: Balance) {
-        // Check if the FT is listed
+        // check if the FT is listed
         require!(
             self.ft_faucet.contains_key(&env::predecessor_account_id()),
             "This FT Contract has not been listed"
@@ -172,7 +175,7 @@ impl Contract {
     }
 
     // Remove Token
-    // TODO Return the remaining FT to arbitrary account
+    // TODO Return the remaining FT to arbitrary account or burn them
     pub fn ft_remove_token(&mut self, confirm: bool) {
         require!(confirm, "Warning, you have to call with confirm argument");
 
@@ -217,16 +220,16 @@ impl Contract {
         amount: U128,
     ) {
         require!(
-            self.block_list.contains(&receiver_id) == false,
-            "Account has been blocklisted!".to_owned()
+            self.blacklist.contains(&receiver_id) == false,
+            "Account has been blacklisted!".to_owned()
         );
         match self.ft_faucet.get(&ft_contract_id) {
-            // FT contract is not listed
+            // ft contract is not listed
             None => {
                 log!("This FT Contract has not been listed");
             }
 
-            // FT contract is listed
+            // ft contract is listed
             Some(ft_contract) => {
                 require!(
                     amount.0 <= ft_contract.ft_request_allowance,
@@ -237,19 +240,19 @@ impl Contract {
                     "Requested amount is higher than the available balance of",
                 );
 
-                // Storage_deposit_arguments
+                // storage_deposit_arguments
                 let storage_deposit_arguments =
                     json!({ "account_id": receiver_id, "registration_only": true })
                         .to_string()
                         .into_bytes();
 
-                // FT transfer arguments
+                // ft transfer arguments
                 let ft_transfer_arguments = json!({ "receiver_id": receiver_id, "amount": amount })
                     .to_string()
                     .into_bytes();
 
                 // TODO revaluate GAS attached
-                // Register the receiver_id in the FT contract, transfer the funds and update the available FT balance
+                // register the receiver_id in the FT contract, transfer the funds and update the available FT balance
                 Promise::new(ft_contract_id.clone())
                     .function_call(
                         "storage_deposit".to_owned(),
@@ -265,21 +268,22 @@ impl Contract {
                     )
                     .then(
                         Self::ext(env::current_account_id())
-                            .update_ft_balance_and_successful_requests(ft_contract_id, amount),
+                            .update_ft_balance_and_stats(ft_contract_id, amount),
                     );
             }
         }
     }
 
-    #[private]
-    pub fn update_ft_balance_and_successful_requests(
+    // Update FT balance and stats
+    pub fn update_ft_balance_and_stats(
         &mut self,
         ft_contract_id: AccountId,
         amount: U128,
         #[callback_result] call_result: Result<(), PromiseError>,
     ) {
+        assert_self();
         match call_result {
-            // Log Error message
+            // log Error message
             Err(err) => log!("{:#?}", err),
             Ok(_) => {
                 self.ft_faucet
