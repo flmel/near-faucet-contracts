@@ -11,6 +11,10 @@ near-sdk = "4.1.1"
 near-contract-standards = "4.1.1"
 schemars = "0.8"
 
+[dev-dependencies]
+workspaces = "0.7.0"
+anyhow  = "1.0.66"
+near-units = "0.2.0"
 
 [profile.release]
 codegen-units = 1
