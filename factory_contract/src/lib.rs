@@ -79,7 +79,7 @@ impl Contract {
             self.deployed_contracts.swap_remove(index as u64);
         }
     }
-
+    //  Delete the contract
     pub fn delete_contract_account(&mut self, ft_contract_id: AccountId) {
         assert_self();
 
