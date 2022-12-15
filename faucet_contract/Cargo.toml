@@ -1,5 +1,5 @@
 [package]
-name = "near-testnet-faucet"
+name = "faucet_contract"
 version = "0.1.0"
 edition = "2021"
 
