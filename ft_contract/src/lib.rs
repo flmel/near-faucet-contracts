@@ -168,6 +168,7 @@ impl FungibleTokenMetadataProvider for Contract {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
+    use crate::storage::StorageManagement;
     use near_contract_standards::fungible_token::metadata::FT_METADATA_SPEC;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::{testing_env, Balance};
@@ -180,9 +181,22 @@ mod tests {
         let mut builder = VMContextBuilder::new();
         builder
             .current_account_id("contract.testnet".parse().unwrap())
-            .signer_account_id(predecessor_account_id.clone())
             .predecessor_account_id(predecessor_account_id);
         builder
+    }
+
+    fn get_init_contract(owner_id: AccountId, total_supply: Balance) -> Contract {
+        let metadata = FungibleTokenMetadata {
+            spec: FT_METADATA_SPEC.to_string(),
+            name: "Test Token".to_string(),
+            symbol: "TEST".to_string(),
+            icon: None,
+            reference: None,
+            reference_hash: None,
+            decimals: 24,
+        };
+
+        Contract::new(owner_id.into(), total_supply.into(), metadata)
     }
 
     #[test]
@@ -215,70 +229,78 @@ mod tests {
         assert_eq!(contract.registered_accounts, 1);
     }
 
-    // #[test]
-    // #[should_panic(expected = "The contract is not initialized")]
-    // fn default() {
-    //     let context = get_context(accounts(1));
-    //     testing_env!(context.build());
-    //     let _contract = Contract::default();
-    // }
+    #[test]
+    fn transfer() {
+        let mut context = get_context(accounts(2));
+        testing_env!(context.build());
+        let mut contract = get_init_contract(accounts(2), TOTAL_SUPPLY);
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(contract.storage_balance_bounds().min.into())
+            .predecessor_account_id(accounts(1))
+            .build());
+        // Paying for account registration, aka storage deposit
+        contract.storage_deposit(None, None);
 
-    // #[test]
-    // fn transfer() {
-    //     let mut context = get_context(accounts(2));
-    //     testing_env!(context.build());
-    //     let mut contract = Contract::new_default_meta(accounts(2).into(), TOTAL_SUPPLY.into());
-    //     testing_env!(context
-    //         .storage_usage(env::storage_usage())
-    //         .attached_deposit(contract.storage_balance_bounds().min.into())
-    //         .predecessor_account_id(accounts(1))
-    //         .build());
-    //     // Paying for account registration, aka storage deposit
-    //     contract.storage_deposit(None, None);
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(1)
+            .predecessor_account_id(accounts(2))
+            .build());
+        let transfer_amount = TOTAL_SUPPLY / 3;
+        contract.ft_transfer(accounts(1), transfer_amount.into(), None);
 
-    //     testing_env!(context
-    //         .storage_usage(env::storage_usage())
-    //         .attached_deposit(1)
-    //         .predecessor_account_id(accounts(2))
-    //         .build());
-    //     let transfer_amount = TOTAL_SUPPLY / 3;
-    //     contract.ft_transfer(accounts(1), transfer_amount.into(), None);
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .account_balance(env::account_balance())
+            .is_view(true)
+            .attached_deposit(0)
+            .build());
+        assert_eq!(
+            contract.ft_balance_of(accounts(2)).0,
+            (TOTAL_SUPPLY - transfer_amount)
+        );
 
-    //     testing_env!(context
-    //         .storage_usage(env::storage_usage())
-    //         .account_balance(env::account_balance())
-    //         .is_view(true)
-    //         .attached_deposit(0)
-    //         .build());
-    //     assert_eq!(
-    //         contract.ft_balance_of(accounts(2)).0,
-    //         (TOTAL_SUPPLY - transfer_amount)
-    //     );
-    //     assert_eq!(contract.ft_balance_of(accounts(1)).0, transfer_amount);
-    // }
+        assert_eq!(contract.ft_balance_of(accounts(1)).0, transfer_amount);
+    }
 
-    // // ========================
-    // #[test]
-    // fn get_registered_accounts() {
-    //     let mut context = get_context(accounts(2));
-    //     let mut contract = Contract::default();
+    // ========================
+    #[test]
+    fn get_registered_accounts() {
+        let mut context = get_context(accounts(2));
+        let mut contract = get_init_contract(accounts(1), TOTAL_SUPPLY);
 
-    //     contract.ft_transfer(accounts(1), transfer_amount.into(), None);
-    // }
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(contract.storage_balance_bounds().min.into())
+            .predecessor_account_id(accounts(2))
+            .build());
+        // Paying for account registration, aka storage deposit
+        contract.storage_deposit(None, None);
+
+        testing_env!(context.is_view(true).build());
+
+        assert_eq!(contract.get_registered_accounts(), 2);
+    }
 
     #[test]
     #[should_panic]
     fn panics_add_mod() {
-        let mut contract = Contract::default();
+        let mut context = get_context(accounts(2));
+        let mut contract = get_init_contract(accounts(1), TOTAL_SUPPLY);
+        testing_env!(context.is_view(false).build());
+
         contract.add_mod(accounts(1));
     }
 
     #[test]
     fn add_mod() {
-        let mut context = get_context(accounts(2));
-        let mut contract = Contract::default();
+        let mut context = get_context("contract.testnet".parse().unwrap());
+        testing_env!(context.is_view(false).build());
+        let mut contract = get_init_contract(accounts(1), TOTAL_SUPPLY);
 
         contract.add_mod(accounts(3));
+
         assert!(contract.mod_list.contains(&accounts(3)));
     }
 }
