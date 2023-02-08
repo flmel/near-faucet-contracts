@@ -15,6 +15,7 @@ schemars = "0.8"
 workspaces = "0.7.0"
 anyhow  = "1.0.66"
 near-units = "0.2.0"
+tokio = { version = "1.23.0", features = ["full"] }
 
 [profile.release]
 codegen-units = 1
