@@ -34,7 +34,7 @@ pub struct FTconfig {
 #[derive(Serialize, BorshSerialize, BorshDeserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FT {
-    account_id: AccountId,
+    ft_contract_id: AccountId,
     ft_config: FTconfig,
 }
 
@@ -130,7 +130,7 @@ impl Contract {
     pub fn ft_list_token(
         &mut self,
         #[callback_result] call_result: Result<FungibleTokenMetadata, PromiseError>,
-        ft_account_id: AccountId,
+        ft_contract_id: AccountId,
         ft_request_allowance: Balance,
         ft_available_balance: Balance,
     ) {
@@ -139,7 +139,7 @@ impl Contract {
             Ok(ft_metadata) => {
                 // result is Ok store into ft_faucet HashMap
                 self.ft_faucet.insert(
-                    ft_account_id,
+                    ft_contract_id,
                     FTconfig {
                         ft_request_allowance,
                         ft_available_balance,
@@ -206,7 +206,7 @@ impl Contract {
         self.ft_faucet
             .iter()
             .map(|(k, v)| FT {
-                account_id: k.clone(),
+                ft_contract_id: k.clone(),
                 ft_config: v.clone(),
             })
             .collect::<Vec<FT>>()
