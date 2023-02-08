@@ -11,10 +11,8 @@ use near_sdk::{
 
 mod external;
 mod fungible_tokens;
-mod settings;
 
 use crate::fungible_tokens::*;
-use crate::settings::*;
 use external::vault_contract;
 
 #[near_bindgen]
@@ -26,6 +24,11 @@ pub struct Contract {
     ft_faucet: UnorderedMap<AccountId, FTconfig>,
     blacklist: LookupSet<AccountId>,
     factory_list: LookupSet<AccountId>,
+    mod_list: LookupSet<AccountId>,
+    vault_contract_id: AccountId,
+    min_balance_threshold: Balance,
+    request_allowance: Balance,
+    request_gap_required: u64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -42,6 +45,7 @@ enum StorageKey {
     FTFaucet,
     Blacklist,
     FactoryList,
+    ModList,
 }
 
 impl Default for Contract {
@@ -53,6 +57,11 @@ impl Default for Contract {
             successful_requests: 0,
             blacklist: LookupSet::new(StorageKey::Blacklist),
             factory_list: LookupSet::new(StorageKey::FactoryList),
+            mod_list: LookupSet::new(StorageKey::ModList),
+            vault_contract_id: "vault.nonofficial.testnet".parse().unwrap(),
+            min_balance_threshold: 5_000_000_000_000_000_000_000_000_000,
+            request_allowance: 20_000_000_000_000_000_000_000_000,
+            request_gap_required: 3_600_000,
         }
     }
 }
@@ -60,14 +69,14 @@ impl Default for Contract {
 #[near_bindgen]
 impl Contract {
     // Request NEAR from the faucet
-    pub fn request_near(&mut self, receiver_id: AccountId, amount: U128) {
+    pub fn request_near(&mut self, receiver_id: AccountId, request_amount: U128) {
         // check if the receiver is in the blacklist
         require!(
             self.blacklist.contains(&env::predecessor_account_id()) == false,
             "Account has been blacklisted!"
         );
         require!(
-            amount.0 <= MAX_WITHDRAW_AMOUNT,
+            request_amount.0 <= self.request_allowance,
             "Withdraw request too large!"
         );
 
@@ -79,7 +88,7 @@ impl Contract {
         match self.recent_receivers.get(&receiver_id) {
             Some(previous_timestamp_ms) => {
                 // if they did receive within the last ~30 min block them
-                if &current_timestamp_ms - previous_timestamp_ms < REQUEST_GAP_LIMITER {
+                if &current_timestamp_ms - previous_timestamp_ms < self.request_gap_required {
                     env::panic_str(
                         "You have to wait for a little longer before requesting to this account!",
                     )
@@ -91,11 +100,11 @@ impl Contract {
             }
         }
         // make the transfer
-        Promise::new(receiver_id.clone()).transfer(amount.0);
+        Promise::new(receiver_id.clone()).transfer(request_amount.0);
         // increment the successful requests
         self.successful_requests += 1;
         // check if additional liquidity is needed
-        if env::account_balance() < MIN_BALANCE_THRESHOLD {
+        if env::account_balance() < self.min_balance_threshold {
             self.request_additional_liquidity();
         }
     }
@@ -106,7 +115,7 @@ impl Contract {
         let mut to_del: Vec<AccountId> = vec![];
 
         for (receiver_id, timestamp) in self.recent_receivers.iter() {
-            if env::block_timestamp_ms() - timestamp > REQUEST_GAP_LIMITER {
+            if env::block_timestamp_ms() - timestamp > self.request_gap_required {
                 to_del.push(receiver_id.clone());
             }
         }
@@ -169,7 +178,7 @@ impl Contract {
 
     // Request additional liquidity
     fn request_additional_liquidity(&self) {
-        vault_contract::ext(VAULT_ID.parse().unwrap()).request_funds();
+        vault_contract::ext(self.vault_contract_id.clone()).request_funds();
     }
 }
 
