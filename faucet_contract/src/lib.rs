@@ -82,23 +82,9 @@ impl Contract {
 
         // remove expired restrictions
         self.remove_expired_restrictions();
+        // check if the receiver has requested recently
+        self.check_recent_receivers(&receiver_id);
 
-        let current_timestamp_ms: u64 = env::block_timestamp_ms();
-        // did the receiver get money recently? if not insert them in the the map
-        match self.recent_receivers.get(&receiver_id) {
-            Some(previous_timestamp_ms) => {
-                // if they did receive within the last ~30 min block them
-                if &current_timestamp_ms - previous_timestamp_ms < self.request_gap_required {
-                    env::panic_str(
-                        "You have to wait for a little longer before requesting to this account!",
-                    )
-                }
-            }
-            None => {
-                self.recent_receivers
-                    .insert(receiver_id.clone(), current_timestamp_ms);
-            }
-        }
         // make the transfer
         Promise::new(receiver_id.clone()).transfer(request_amount.0);
         // increment the successful requests
@@ -179,6 +165,25 @@ impl Contract {
     // Request additional liquidity
     fn request_additional_liquidity(&self) {
         vault_contract::ext(self.vault_contract_id.clone()).request_funds();
+    }
+
+    fn check_recent_receivers(&mut self, receiver_id: &AccountId) {
+        let current_timestamp_ms: u64 = env::block_timestamp_ms();
+        // did the receiver get money recently? if not insert them in the the map
+        match self.recent_receivers.get(receiver_id) {
+            Some(previous_timestamp_ms) => {
+                // if they did receive within the last ~30 min block them
+                if &current_timestamp_ms - previous_timestamp_ms < self.request_gap_required {
+                    env::panic_str(
+                        "You have to wait for a little longer before requesting to this account!",
+                    )
+                }
+            }
+            None => {
+                self.recent_receivers
+                    .insert(receiver_id.clone(), current_timestamp_ms);
+            }
+        }
     }
 }
 

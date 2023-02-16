@@ -239,12 +239,13 @@ impl Contract {
                     amount.0 <= ft_contract.ft_available_balance,
                     "Requested amount is higher than the available balance of",
                 );
+                // check if the receiver has requested recently
+                self.check_recent_receivers(&receiver_id);
 
                 // storage_deposit_arguments
                 let storage_deposit_arguments =
-                    json!({ "account_id": receiver_id, "registration_only": true })
-                        .to_string()
-                        .into_bytes();
+                    //json!({ "account_id": receiver_id, "registration_only": true })
+                    json!({ "account_id": receiver_id }).to_string().into_bytes();
 
                 // ft transfer arguments
                 let ft_transfer_arguments = json!({ "receiver_id": receiver_id, "amount": amount })
@@ -272,6 +273,41 @@ impl Contract {
                     );
             }
         }
+    }
+
+    // Request Fakes
+    pub fn ft_request_fakes(
+        &mut self,
+        fakes_contract_id: AccountId,
+        receiver_id: AccountId,
+        amount: U128,
+    ) {
+        require!(
+            self.blacklist.contains(&receiver_id) == false,
+            "Account has been blacklisted!".to_owned()
+        );
+
+        // storage_deposit_arguments
+        let storage_deposit_arguments =
+            json!({ "account_id": receiver_id, "registration_only": true })
+                .to_string()
+                .into_bytes();
+
+        // ft mint arguments
+        let mint_arguments = json!({ "account_id": receiver_id, "amount": amount })
+            .to_string()
+            .into_bytes();
+
+        // TODO revaluate GAS attached
+        // register the receiver_id in the FT contract, transfer the funds and update the available FT balance
+        Promise::new(fakes_contract_id.clone())
+            .function_call(
+                "storage_deposit".to_owned(),
+                storage_deposit_arguments,
+                ONE_NEAR / 10,
+                Gas(5 * TGAS),
+            )
+            .function_call("mint".to_owned(), mint_arguments, 0, Gas(20 * TGAS));
     }
 
     // Update FT balance and stats
