@@ -88,7 +88,7 @@ impl FungibleTokenReceiver for Contract {
                                 amount.0,
                             ),
                     );
-                PromiseOrValue::from(promise)
+                PromiseOrValue::Value(U128(0))
             }
         }
     }
@@ -273,41 +273,6 @@ impl Contract {
                     );
             }
         }
-    }
-
-    // Request Fakes
-    pub fn ft_request_fakes(
-        &mut self,
-        fakes_contract_id: AccountId,
-        receiver_id: AccountId,
-        amount: U128,
-    ) {
-        require!(
-            self.blacklist.contains(&receiver_id) == false,
-            "Account has been blacklisted!".to_owned()
-        );
-
-        // storage_deposit_arguments
-        let storage_deposit_arguments =
-            json!({ "account_id": receiver_id, "registration_only": true })
-                .to_string()
-                .into_bytes();
-
-        // ft mint arguments
-        let mint_arguments = json!({ "account_id": receiver_id, "amount": amount })
-            .to_string()
-            .into_bytes();
-
-        // TODO revaluate GAS attached
-        // register the receiver_id in the FT contract, transfer the funds and update the available FT balance
-        Promise::new(fakes_contract_id.clone())
-            .function_call(
-                "storage_deposit".to_owned(),
-                storage_deposit_arguments,
-                ONE_NEAR / 10,
-                Gas(5 * TGAS),
-            )
-            .function_call("mint".to_owned(), mint_arguments, 0, Gas(20 * TGAS));
     }
 
     // Update FT balance and stats

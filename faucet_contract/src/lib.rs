@@ -72,7 +72,7 @@ impl Contract {
     pub fn request_near(&mut self, receiver_id: AccountId, request_amount: U128) {
         // check if the receiver is in the blacklist
         require!(
-            self.blacklist.contains(&env::predecessor_account_id()) == false,
+            self.blacklist.contains(&receiver_id) == false,
             "Account has been blacklisted!"
         );
         require!(
