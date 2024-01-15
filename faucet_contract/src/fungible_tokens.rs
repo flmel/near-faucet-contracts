@@ -43,7 +43,7 @@ impl FungibleTokenReceiver for Contract {
     #[allow(unused_variables)] // we don't make use of sender_id
     fn ft_on_transfer(
         &mut self,
-        sender_id: AccountId,
+        _sender_id: AccountId,
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {

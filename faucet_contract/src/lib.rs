@@ -135,6 +135,12 @@ impl Contract {
         self.recent_receivers.clear();
     }
 
+    pub fn set_gap_required(&mut self, gap_required_ms: u64) {
+        assert_self();
+        self.request_gap_required = gap_required_ms;
+        self.clear_recent_receivers();
+    }
+
     // Contribute to the faucet contract to get in the list of fame
     #[payable]
     pub fn contribute(&mut self) {
