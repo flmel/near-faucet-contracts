@@ -8,6 +8,7 @@ use near_sdk::{
     store::{LookupSet, UnorderedMap},
     AccountId, Balance, BorshStorageKey, Promise,
 };
+use regex::Regex;
 
 mod external;
 mod fungible_tokens;
@@ -78,6 +79,11 @@ impl Contract {
         require!(
             request_amount.0 <= self.request_allowance,
             "Withdraw request too large!"
+        );
+        let pattern = Regex::new(r"^([A-Za-z\d]+[\-_])*[A-Za-z\d]+\.testnet$").unwrap();
+        require!(
+            pattern.is_match(&receiver_id.to_string() as &str),
+            "Invalid receiver account id!"
         );
 
         // remove expired restrictions
