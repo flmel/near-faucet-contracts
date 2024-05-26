@@ -61,7 +61,7 @@ impl Default for Contract {
             mod_list: LookupSet::new(StorageKey::ModList),
             vault_contract_id: "vault.nonofficial.testnet".parse().unwrap(),
             min_balance_threshold: 5_000_000_000_000_000_000_000_000_000,
-            request_allowance: 20_000_000_000_000_000_000_000_000,
+            request_allowance: 10_000_000_000_000_000_000_000_000,
             request_gap_required: 3_600_000,
         }
     }
