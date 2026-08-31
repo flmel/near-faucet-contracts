@@ -1,3 +1,5 @@
+
+
 near-faucet-contracts
 ====
 Includes the contracts currently in use by [near-faucet.io](https://near-faucet.io) representing faucet, vault, FT contract, and a FT contract factory.
@@ -13,6 +15,7 @@ Includes the contracts currently in use by [near-faucet.io](https://near-faucet.
 In order to compile and run everything you will need:
 
 * Node and [near-cli](https://github.com/near/near-cli) installed
+* [cargo-near](https://github.com/near/cargo-near) installed
 * Rust and WASM toolchain [steps here](https://docs.near.org/sdk/rust/introduction)
 
  
